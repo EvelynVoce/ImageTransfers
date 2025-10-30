@@ -1,9 +1,9 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import FileResponse, JSONResponse
 import shutil
 import uuid
 import os
-from typing import List
+from typing import List, Dict
 
 from starlette.middleware.cors import CORSMiddleware
 
@@ -22,29 +22,29 @@ app.add_middleware(
 
 
 @app.get("/check_exists/{serial_number}")
-async def check_exists(serial_number: str):
+async def check_exists(serial_number: str) -> Dict:
     """
     Check that a temp file of images with this serial doesn't already exists.
     This stops you from being able to upload multiple sets of images at once
     then upload greater than the required number of images
     """
-    folder_path = os.path.join(UPLOAD_DIR, serial_number)
-    exists = os.path.exists(folder_path)
+    folder_path: str = os.path.join(UPLOAD_DIR, serial_number)
+    exists: bool = os.path.exists(folder_path)
     return {"exists": exists}
 
 
 @app.get("/check_uploads/{serial_number}")
-async def check_uploads(serial_number: str):
+async def check_uploads(serial_number: str) -> Dict:
     """
     Check how many images have been uploaded for a given serial number.
     """
-    folder_path = os.path.join(UPLOAD_DIR, serial_number)
+    folder_path: str = os.path.join(UPLOAD_DIR, serial_number)
 
     if not os.path.exists(folder_path):
         return {"status": "folder does not exist", "count": 0}
 
     # Count files in the folder
-    files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
+    files: List[str] = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
     total_files = len(files)
 
     expected: int = 277
@@ -61,14 +61,14 @@ async def check_uploads(serial_number: str):
 async def upload_batch(
     serial_number: str = Form(...),
     files: List[UploadFile] = File(...),
-):
+) -> Dict:
     """
     Upload multiple images to the 'server'. In this case it actually just writes them to a folder in this project
     however this clearly shows that the images have been transferred correctly.
     """
     uploaded_files = []
 
-    full_upload_dir = os.path.join(UPLOAD_DIR, serial_number)
+    full_upload_dir: str = os.path.join(UPLOAD_DIR, serial_number)
     os.makedirs(full_upload_dir, exist_ok=True)
 
     for file in files:
